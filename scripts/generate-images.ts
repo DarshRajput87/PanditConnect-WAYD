@@ -23,7 +23,9 @@ cloudinary.config({
 })
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const IMAGEN_MODEL = 'imagen-3.0-generate-002'
+// Imagen :predict models require a paid-tier project (403 on this key), so we
+// use the Gemini image-generation model via :generateContent instead.
+const IMAGE_MODEL = 'gemini-2.5-flash-image'
 const DELAY_MS = 3000 // rate-limit pause between API calls
 
 // ─── Image definitions ────────────────────────────────────────────────────────
@@ -265,16 +267,15 @@ async function generateImage(imageDef: ImageDef): Promise<Buffer> {
   console.log(`\n[gen] Generating: ${imageDef.key}...`)
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:predict?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        instances: [{ prompt: imageDef.prompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: getAspectRatio(imageDef.width, imageDef.height),
-          personGeneration: 'allow_adult',
+        contents: [{ parts: [{ text: imageDef.prompt }] }],
+        generationConfig: {
+          responseModalities: ['IMAGE'],
+          imageConfig: { aspectRatio: getAspectRatio(imageDef.width, imageDef.height) },
         },
       }),
     }
@@ -286,10 +287,11 @@ async function generateImage(imageDef: ImageDef): Promise<Buffer> {
   }
 
   const data = await response.json()
-  const base64Image = data.predictions?.[0]?.bytesBase64Encoded
+  const parts: Array<{ inlineData?: { data?: string } }> = data.candidates?.[0]?.content?.parts ?? []
+  const base64Image = parts.find((p) => p.inlineData?.data)?.inlineData?.data
 
   if (!base64Image) {
-    throw new Error(`No image returned for ${imageDef.key}. Response: ${JSON.stringify(data)}`)
+    throw new Error(`No image returned for ${imageDef.key}. Response: ${JSON.stringify(data).slice(0, 600)}`)
   }
 
   return Buffer.from(base64Image, 'base64')
@@ -343,6 +345,12 @@ function loadExistingResults(): Record<string, string> {
 }
 
 function writeOutput(results: Record<string, string>) {
+  // Always emit every key (empty string when not yet generated) so the
+  // app's fallback logic and TypeScript types stay stable.
+  const complete: Record<string, string> = {}
+  for (const def of IMAGES) complete[def.key] = results[def.key] ?? ''
+  results = complete
+
   const timestamp = new Date().toISOString()
   const fileContent = `// AUTO-GENERATED — DO NOT EDIT MANUALLY
 // Generated: ${timestamp}
