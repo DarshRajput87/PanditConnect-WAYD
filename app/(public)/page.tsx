@@ -21,14 +21,30 @@ import {
 } from 'lucide-react'
 import { POOJA_CATALOGUE } from '@/types'
 import { AnimateOnScroll } from '@/components/shared/AnimateOnScroll'
+import { LANDING_IMAGES, POOJA_IMAGES as GENERATED_POOJA_IMAGES } from '@/lib/generated-images'
 
 // Static marketing page — copy is intentionally hardcoded English (no i18n).
-// All imagery served from the Unsplash CDN (allowed in next.config.mjs).
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=1920&q=85'
-const CTA_IMAGE = 'https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=1920&q=60'
-const PANDIT_CTA_IMAGE = 'https://images.unsplash.com/photo-1609902726285-00668009f004?w=600&q=80'
+// Imagery comes from AI-generated Cloudinary assets (lib/generated-images.ts,
+// produced by `pnpm generate-images`); any image not generated yet falls back
+// to the Unsplash CDN. Both hosts are allowed in next.config.mjs.
+function withFallback(url: string | undefined, fallback: string): string {
+  return url && url.length > 0 ? url : fallback
+}
 
-const POOJA_IMAGES: Record<string, string> = {
+const HERO_IMAGE = withFallback(
+  LANDING_IMAGES.hero,
+  'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=1920&q=85'
+)
+const CTA_IMAGE = withFallback(
+  LANDING_IMAGES.ctaBanner,
+  'https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=1920&q=60'
+)
+const PANDIT_CTA_IMAGE = withFallback(
+  LANDING_IMAGES.forPandits,
+  'https://images.unsplash.com/photo-1609902726285-00668009f004?w=600&q=80'
+)
+
+const POOJA_IMAGE_FALLBACKS: Record<string, string> = {
   'satyanarayan-katha': 'https://images.unsplash.com/photo-1608501078713-8e445a709b39?w=400&q=75',
   'griha-pravesh': 'https://images.unsplash.com/photo-1560448075-bb485b067938?w=400&q=75',
   'vivah-sanskar': 'https://images.unsplash.com/photo-1601821765780-754fa98637be?w=400&q=75',
@@ -42,6 +58,13 @@ const POOJA_IMAGES: Record<string, string> = {
   default: 'https://images.unsplash.com/photo-1527525443983-6e60c75fff46?w=400&q=75',
 }
 
+const POOJA_IMAGES: Record<string, string> = Object.fromEntries(
+  Object.entries(POOJA_IMAGE_FALLBACKS).map(([key, fallback]) => [
+    key,
+    withFallback(GENERATED_POOJA_IMAGES[key], fallback),
+  ])
+)
+
 const QUICK_SEARCHES = ['Satyanarayan Katha', 'Griha Pravesh', 'Mundan Sanskar', 'Rudrabhishek']
 
 const HOW_STEPS = [
@@ -49,21 +72,30 @@ const HOW_STEPS = [
     step: '01',
     title: 'Search for your pooja',
     desc: 'Browse our complete catalogue of poojas and sanskars. Compare verified Pandits by rating, experience, languages spoken and price — all in one place.',
-    image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80',
+    image: withFallback(
+      LANDING_IMAGES.howItWorksStep1,
+      'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80'
+    ),
     items: ['Filter by language, price & rating', 'See samagri list upfront', 'Read real verified reviews'],
   },
   {
     step: '02',
     title: 'Book in a few taps',
     desc: 'Pick a date and time, share your ceremony address, and send the booking request. Your Pandit responds within 2 hours.',
-    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80',
+    image: withFallback(
+      LANDING_IMAGES.howItWorksStep2,
+      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80'
+    ),
     items: ['Quick response from your Pandit', 'No hidden fees', 'Cancel anytime before ceremony'],
   },
   {
     step: '03',
     title: 'Your ceremony, done right',
     desc: 'Your Pandit arrives prepared with everything needed. After the ceremony, share your experience to help other devotees.',
-    image: 'https://images.unsplash.com/photo-1527525443983-6e60c75fff46?w=800&q=80',
+    image: withFallback(
+      LANDING_IMAGES.howItWorksStep3,
+      'https://images.unsplash.com/photo-1527525443983-6e60c75fff46?w=800&q=80'
+    ),
     items: ['Pandit arrives with all materials', 'Ceremony done as per vidhi', 'Leave a review after'],
   },
 ]

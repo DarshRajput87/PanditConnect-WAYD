@@ -1,9 +1,26 @@
 // AUTO-GENERATED — DO NOT EDIT MANUALLY
-// Generated: 2026-06-11T06:08:10.350Z
+// Generated: 2026-06-11T06:16:47.026Z
 // Source: scripts/generate-images.ts using Gemini Imagen API
 // To regenerate: pnpm generate-images
 
-export const GENERATED_IMAGES = {} as const
+export const GENERATED_IMAGES = {
+  "hero": "",
+  "howItWorksStep1": "",
+  "howItWorksStep2": "",
+  "howItWorksStep3": "",
+  "forPandits": "",
+  "ctaBanner": "",
+  "poojaSatyanarayan": "",
+  "poojaGrihaPravesh": "",
+  "poojaVivahSanskar": "",
+  "poojaRudrabhishek": "",
+  "poojaNavchandiYagna": "",
+  "poojaGanesh": "",
+  "poojaLakshmi": "",
+  "poojaVastu": "",
+  "poojaMundan": "",
+  "poojaNamekaran": ""
+} as const
 
 export type GeneratedImageKey = keyof typeof GENERATED_IMAGES
 
