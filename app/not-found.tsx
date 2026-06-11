@@ -1,0 +1,18 @@
+'use client'
+import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
+
+export default function NotFound() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+      <p className="text-5xl font-bold text-orange-500">404</p>
+      <h1 className="mt-4 text-xl font-semibold text-neutral-900">{t('common.notFoundTitle')}</h1>
+      <p className="mt-2 max-w-sm text-sm text-neutral-500">{t('common.notFoundDesc')}</p>
+      <Link href="/" className="mt-6">
+        <Button>{t('common.backToHome')}</Button>
+      </Link>
+    </div>
+  )
+}
