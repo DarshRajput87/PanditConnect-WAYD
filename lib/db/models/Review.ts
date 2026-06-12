@@ -42,6 +42,8 @@ const ReviewSchema = new Schema<ReviewDoc>(
 
 ReviewSchema.index({ panditId: 1, status: 1 })
 ReviewSchema.index({ customerId: 1 })
+// Review lists: filter by pandit+status, newest first (covers the sort)
+ReviewSchema.index({ panditId: 1, status: 1, createdAt: -1 })
 // bookingId unique index comes from the field-level `unique: true` above.
 
 export const Review =

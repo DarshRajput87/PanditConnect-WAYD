@@ -30,7 +30,7 @@ export function BookingDetail({ booking }: { booking: BookingDetailDTO }) {
     })
 
   return (
-    <div className="max-w-2xl space-y-4 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full space-y-4 p-4 pb-24 md:p-6 md:pb-6">
       <Link
         href="/dashboard/pandit/inquiries"
         className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900"

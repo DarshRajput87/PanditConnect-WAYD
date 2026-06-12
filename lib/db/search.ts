@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { unstable_cache } from 'next/cache'
 import { connectDB } from '@/lib/db/connect'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { Pooja } from '@/lib/db/models/Pooja'
@@ -24,6 +25,19 @@ export function resolveSearchQuery(params: PanditSearchParams): string {
   if (!pooja) return ''
   const entry = POOJA_CATALOGUE.find((p) => p.key === pooja.toLowerCase())
   return entry ? entry.name : pooja.replace(/-/g, ' ')
+}
+
+// Cached variant — results are shared across visitors for 60s, so repeated
+// identical searches (and back-navigation) skip the DB entirely. The key is
+// built from the individual params to be independent of object key order.
+export function searchVerifiedPanditsCached(params: PanditSearchParams): Promise<PanditSearchResultDTO[]> {
+  const key = [params.q, params.pooja, params.area, params.lang, params.minRating, params.maxPrice]
+    .map((v) => v ?? '')
+    .join('|')
+  return unstable_cache(() => searchVerifiedPandits(params), ['pandit-search', key], {
+    revalidate: 60,
+    tags: ['search'],
+  })()
 }
 
 // Public search over verified Pandits — no auth required. Shared by the public

@@ -25,6 +25,13 @@ export interface PanditDoc extends Document {
   responseRate: number
   completedBookings: number
   lastActiveAt: Date
+  availability?: {
+    workingDays: number[] // 0=Sun … 6=Sat
+    workingHoursStart: string // 'HH:mm' IST
+    workingHoursEnd: string // 'HH:mm' IST
+    maxPerDay: number | null
+    blockedDates: Date[]
+  }
   deletedAt?: Date
   createdAt: Date
   updatedAt: Date
@@ -63,6 +70,13 @@ const PanditSchema = new Schema<PanditDoc>(
     responseRate: { type: Number, default: 0 },
     completedBookings: { type: Number, default: 0 },
     lastActiveAt: { type: Date, default: Date.now },
+    availability: {
+      workingDays: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+      workingHoursStart: { type: String, default: '06:00' },
+      workingHoursEnd: { type: String, default: '20:00' },
+      maxPerDay: { type: Number, default: null },
+      blockedDates: { type: [Date], default: [] },
+    },
     deletedAt: Date,
   },
   { timestamps: true }
@@ -71,6 +85,8 @@ const PanditSchema = new Schema<PanditDoc>(
 PanditSchema.index({ verificationStatus: 1 })
 PanditSchema.index({ serviceAreas: 1 })
 PanditSchema.index({ ratingWeighted: -1 })
+// Search & suggestions: verified pandits sorted by weighted rating
+PanditSchema.index({ verificationStatus: 1, ratingWeighted: -1 })
 
 export const Pandit =
   (mongoose.models.Pandit as mongoose.Model<PanditDoc>) ||

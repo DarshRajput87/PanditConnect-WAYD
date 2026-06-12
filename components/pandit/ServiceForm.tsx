@@ -5,10 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { createPooja, updatePooja } from '@/actions/pandit-services'
+import { MaterialsEditor } from './MaterialsEditor'
+import { ServiceMaterials } from './ServiceMaterials'
 import { POOJA_CATALOGUE } from '@/types'
+import type { MaterialRow } from './types'
 import type { ServiceDTO } from '@/types/dashboard'
 
-export function ServiceForm({ service }: { service?: ServiceDTO }) {
+interface Props {
+  service?: ServiceDTO
+  /** Rendered inside another page (no padding/back link); closes via onClose. */
+  inline?: boolean
+  onClose?: () => void
+}
+
+export function ServiceForm({ service, inline, onClose }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const [isPending, startTransition] = useTransition()
@@ -17,8 +27,17 @@ export function ServiceForm({ service }: { service?: ServiceDTO }) {
   const [price, setPrice] = useState(service ? String(service.price) : '')
   const [durationMin, setDurationMin] = useState(service ? String(service.durationMin) : '60')
   const [description, setDescription] = useState(service?.description ?? '')
+  // Create mode collects materials locally and saves them with the service.
+  // Edit mode manages them live via <ServiceMaterials /> below.
+  const [materials, setMaterials] = useState<MaterialRow[]>([])
 
   const isEdit = Boolean(service)
+
+  function close() {
+    if (inline && onClose) onClose()
+    else router.push('/dashboard/pandit/services')
+    router.refresh()
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,6 +53,9 @@ export function ServiceForm({ service }: { service?: ServiceDTO }) {
       price: Number(price),
       durationMin: Number(durationMin),
       description: description.trim() || undefined,
+      materials: materials
+        .filter((m) => m.itemName.trim() && m.quantity.trim())
+        .map((m) => ({ itemName: m.itemName.trim(), quantity: m.quantity.trim(), notes: m.notes.trim() || undefined })),
     }
     startTransition(async () => {
       const result = isEdit ? await updatePooja(service!._id, input) : await createPooja(input)
@@ -41,24 +63,15 @@ export function ServiceForm({ service }: { service?: ServiceDTO }) {
         setError(t(`panditDash.errors.${result.error.code}`))
         return
       }
-      router.push('/dashboard/pandit/services')
-      router.refresh()
+      close()
     })
   }
 
   const inputClass =
     'w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500'
 
-  return (
-    <div className="max-w-xl space-y-4 p-4 pb-24 md:p-6 md:pb-6">
-      <Link
-        href="/dashboard/pandit/services"
-        className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" />
-        {t('panditDash.serviceForm.back')}
-      </Link>
-
+  const body = (
+    <>
       <form onSubmit={submit} className="rounded-xl border border-neutral-200 bg-white">
         <div className="border-b border-neutral-200 px-4 py-3">
           <h2 className="text-sm font-medium text-neutral-900">
@@ -138,18 +151,32 @@ export function ServiceForm({ service }: { service?: ServiceDTO }) {
             />
           </div>
 
-          <p className="text-xs text-neutral-400">{t('panditDash.serviceForm.materialsNote')}</p>
+          {!isEdit && (
+            <div className="border-t border-neutral-100 pt-4">
+              <MaterialsEditor value={materials} onChange={setMaterials} />
+            </div>
+          )}
 
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-neutral-200 px-4 py-3">
-          <Link
-            href="/dashboard/pandit/services"
-            className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50"
-          >
-            {t('panditDash.serviceForm.cancel')}
-          </Link>
+          {inline ? (
+            <button
+              type="button"
+              onClick={close}
+              className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50"
+            >
+              {t('panditDash.serviceForm.cancel')}
+            </button>
+          ) : (
+            <Link
+              href="/dashboard/pandit/services"
+              className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50"
+            >
+              {t('panditDash.serviceForm.cancel')}
+            </Link>
+          )}
           <button
             type="submit"
             disabled={isPending}
@@ -160,6 +187,28 @@ export function ServiceForm({ service }: { service?: ServiceDTO }) {
           </button>
         </div>
       </form>
+
+      {/* Edit mode: materials save independently of the form fields */}
+      {isEdit && service && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-4">
+          <ServiceMaterials poojaId={service._id} initialMaterials={service.materials} />
+        </div>
+      )}
+    </>
+  )
+
+  if (inline) return <div className="space-y-4">{body}</div>
+
+  return (
+    <div className="w-full space-y-4 p-4 pb-24 md:p-6 md:pb-6">
+      <Link
+        href="/dashboard/pandit/services"
+        className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+        {t('panditDash.serviceForm.back')}
+      </Link>
+      {body}
     </div>
   )
 }

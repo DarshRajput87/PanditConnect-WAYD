@@ -36,7 +36,7 @@ A modern, multi-sided marketplace connecting devotees with verified Pandits for 
 - **Database:** [MongoDB Atlas](https://www.mongodb.com/atlas/database) with [Mongoose](https://mongoosejs.com/)
 - **Authentication:** [NextAuth.js v5 (Beta)](https://authjs.dev/) (Credentials, OTP & Google OAuth)
 - **Image Hosting & Storage:** [Cloudinary](https://cloudinary.com/)
-- **Email Delivery:** [Resend](https://resend.com/)
+- **Email Delivery:** SMTP via [Nodemailer](https://nodemailer.com/)
 - **Internationalization:** [i18next](https://www.i18next.com/)
 
 ---
@@ -100,8 +100,12 @@ NEXTAUTH_SECRET=your_auth_secret_key_here
 NEXTAUTH_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Resend API (For Emails & OTP)
-RESEND_API_KEY=re_your_api_key
+# SMTP (For Emails & OTP) — leave blank in dev to log instead of send
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_password
+EMAIL_FROM="PanditConnect <noreply@example.com>"
 
 # Cloudinary (Image uploads)
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name

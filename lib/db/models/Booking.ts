@@ -9,8 +9,11 @@ export interface BookingDoc extends Document {
   timezone: string
   address: { line1: string; city: string; state: string; pincode: string }
   status: BookingStatus
+  paymentMethod: 'cash' | 'razorpay'
   cancellation?: { by: mongoose.Types.ObjectId; reason: string; at: Date }
   respondedAt?: Date
+  completedAt?: Date
+  reviewReminderSent: boolean
   expiresAt: Date
   notificationSent: boolean
   createdAt: Date
@@ -35,12 +38,16 @@ const BookingSchema = new Schema<BookingDoc>(
       enum: ['requested', 'confirmed', 'declined', 'expired', 'cancelled', 'completed'],
       default: 'requested',
     },
+    // Default keeps pre-payment bookings (created before this field existed) valid.
+    paymentMethod: { type: String, enum: ['cash', 'razorpay'], default: 'cash' },
     cancellation: {
       by: Schema.Types.ObjectId,
       reason: String,
       at: Date,
     },
     respondedAt: Date,
+    completedAt: Date,
+    reviewReminderSent: { type: Boolean, default: false },
     expiresAt: { type: Date, required: true },
     notificationSent: { type: Boolean, default: false },
   },
@@ -51,6 +58,10 @@ const BookingSchema = new Schema<BookingDoc>(
 BookingSchema.index({ panditId: 1, scheduledAt: 1, status: 1 })
 BookingSchema.index({ customerId: 1, status: 1 })
 BookingSchema.index({ status: 1, expiresAt: 1 }) // for the expiry job
+// Inquiry tabs: filter by pandit+status, newest first
+BookingSchema.index({ panditId: 1, status: 1, createdAt: -1 })
+// Customer bookings list: filter by customer+status, sorted by ceremony date
+BookingSchema.index({ customerId: 1, status: 1, scheduledAt: -1 })
 
 export const Booking =
   (mongoose.models.Booking as mongoose.Model<BookingDoc>) ||

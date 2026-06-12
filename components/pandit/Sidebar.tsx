@@ -139,6 +139,7 @@ function NavItem({ item, active, pendingCount }: { item: NavEntry; active: boole
   return (
     <Link
       href={item.href}
+      prefetch={true}
       className={cn(
         'relative flex items-center gap-2 px-4 py-2 text-sm transition-colors',
         active

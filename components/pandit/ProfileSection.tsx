@@ -29,7 +29,7 @@ export function ProfileSection({ profile }: { profile: PanditProfileSummaryDTO }
   const initials = profile.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className="max-w-3xl space-y-4 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full space-y-4 p-4 pb-24 md:p-6 md:pb-6">
       <ProfileCompletion percent={percent} missing={missing} />
 
       {/* Identity card */}

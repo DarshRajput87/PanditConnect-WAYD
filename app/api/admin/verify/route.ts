@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { sendEmail, isEmailConfigured } from '@/lib/email'
 import { auth } from '@/lib/auth/config'
 import { connectDB } from '@/lib/db/connect'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { User } from '@/lib/db/models/User'
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -52,22 +50,19 @@ export async function POST(req: NextRequest) {
 
   // Notify the pandit (fire and forget; never block the response on email).
   const user = await User.findById(pandit.userId).lean()
-  if (user?.email && resend) {
+  if (user?.email && isEmailConfigured) {
     const msg =
       action === 'approve'
         ? 'Congratulations! Your profile is verified and now live on PanditConnect.'
         : `Your verification was not approved. Reason: ${reason!.trim()}. You may resubmit after making corrections.`
-    resend.emails
-      .send({
-        from: 'PanditConnect <noreply@panditconnect.in>',
-        to: user.email,
-        subject:
-          action === 'approve'
-            ? 'Profile Verified — PanditConnect'
-            : 'Verification Update — PanditConnect',
-        text: msg,
-      })
-      .catch(console.error)
+    sendEmail({
+      to: user.email,
+      subject:
+        action === 'approve'
+          ? 'Profile Verified — PanditConnect'
+          : 'Verification Update — PanditConnect',
+      text: msg,
+    }).catch(console.error)
   }
 
   return NextResponse.json({ success: true })

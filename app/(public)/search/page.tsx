@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth/config'
-import { resolveSearchQuery, searchVerifiedPandits } from '@/lib/db/search'
+import { resolveSearchQuery, searchVerifiedPanditsCached } from '@/lib/db/search'
 import { SearchSection } from '@/components/customer/SearchSection'
 
 export const metadata = {
@@ -27,7 +27,7 @@ export default async function PublicSearchPage({ searchParams }: Props) {
 
   // Supports both ?q=<text> and legacy ?pooja=<catalog-key> URLs.
   const query = resolveSearchQuery(params)
-  const results = query ? await searchVerifiedPandits({ ...params, q: query }) : []
+  const results = query ? await searchVerifiedPanditsCached({ ...params, q: query }) : []
 
   return (
     <div className="min-h-[70vh] bg-neutral-50">

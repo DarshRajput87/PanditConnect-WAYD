@@ -32,7 +32,7 @@ export function InquiriesSection({ tab, newBookings, confirmed, completed }: Pro
         : t('panditDash.inquiries.noPending')
 
   return (
-    <div className="max-w-3xl p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full p-4 pb-24 md:p-6 md:pb-6">
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
         {/* Tabs */}
         <div className="flex border-b border-neutral-200">

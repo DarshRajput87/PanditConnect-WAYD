@@ -67,7 +67,7 @@ export async function createReview(bookingId: string, input: unknown): Promise<R
     const daysSince = (Date.now() - booking.updatedAt.getTime()) / 86_400_000
     if (daysSince > REVIEW_WINDOW_DAYS) return { error: { code: 'window_closed' } }
 
-    const existing = await Review.findOne({ bookingId: booking._id }).lean()
+    const existing = await Review.exists({ bookingId: booking._id })
     if (existing) return { error: { code: 'already_reviewed' } }
 
     // Published immediately — admin moderation (hide/remove) comes in a later phase.
@@ -96,7 +96,7 @@ export async function addPanditReply(reviewId: string, text: string): Promise<Re
     if (!parsed.success) return { error: { code: 'invalid_input' } }
 
     await connectDB()
-    const pandit = await Pandit.findOne({ userId: session.user.id })
+    const pandit = await Pandit.findOne({ userId: session.user.id }).select('_id').lean()
     if (!pandit) return { error: { code: 'unauthorized' } }
 
     const review = await Review.findOne({ _id: reviewId, panditId: pandit._id, status: 'published' })

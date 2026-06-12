@@ -476,7 +476,20 @@
       "addFirst": "अपनी पहली सेवा जोड़ें",
       "activateAria": "{{name}} सक्रिय करें",
       "deactivateAria": "{{name}} निष्क्रिय करें",
-      "editAria": "{{name}} संपादित करें"
+      "editAria": "{{name}} संपादित करें",
+      "materialsTitle": "आवश्यक सामग्री",
+      "samagriCount": "{{count}} सामग्री",
+      "showMaterialsAria": "{{name}} की सामग्री दिखाएँ",
+      "hideMaterialsAria": "{{name}} की सामग्री छिपाएँ",
+      "noMaterials": "अभी कोई सामग्री नहीं जोड़ी गई।",
+      "addFirstMaterial": "पहली सामग्री जोड़ें",
+      "addMaterial": "सामग्री जोड़ें",
+      "adding": "जोड़ा जा रहा है…",
+      "itemName": "वस्तु का नाम",
+      "quantityPlaceholder": "मात्रा (जैसे 500 ग्राम)",
+      "notesOptional": "टिप्पणी (वैकल्पिक)",
+      "editMaterialAria": "{{name}} संपादित करें",
+      "deleteMaterialAria": "{{name}} हटाएँ"
     },
     "serviceForm": {
       "back": "सेवाओं पर वापस",
@@ -489,7 +502,6 @@
       "durationMin": "अवधि (मिनट)",
       "description": "विवरण",
       "descriptionPlaceholder": "इस पूजा में क्या शामिल है?",
-      "materialsNote": "हर सेवा की सामग्री प्रोफ़ाइल विज़ार्ड में संपादित की जा सकती है।",
       "save": "सहेजें",
       "saving": "सहेजा जा रहा है…",
       "cancel": "रद्द करें"
@@ -755,6 +767,22 @@
     "reviewCount": "{{count}} समीक्षाएँ",
     "completedPoojas": "{{count}} पूजाएँ पूर्ण",
     "minutes": "{{count}} मिनट",
-    "signInNote": "इस पंडित जी को बुक करने के लिए साइन इन करें"
+    "signInNote": "इस पंडित जी को बुक करने के लिए साइन इन करें",
+    "signInToBook": "बुक करने के लिए साइन इन करें",
+    "bookCardTitle": "इस पंडित जी को बुक करें",
+    "selectService": "सेवा चुनें",
+    "startingFrom": "{{price}} से शुरू",
+    "checkAvailability": "उपलब्धता देखें",
+    "bookThisService": "बुक करें",
+    "viewSamagri": "सामग्री देखें",
+    "hideSamagri": "सामग्री छिपाएँ",
+    "readMore": "और पढ़ें",
+    "readLess": "कम दिखाएँ",
+    "firstReview": "PanditConnect पर नए — सबसे पहले समीक्षा करें",
+    "showAllReviews": "सभी {{count}} समीक्षाएँ देखें",
+    "panditReply": "पंडित जी का उत्तर",
+    "serves": "सेवा क्षेत्र",
+    "share": "साझा करें",
+    "linkCopied": "लिंक कॉपी हो गया"
   }
 }

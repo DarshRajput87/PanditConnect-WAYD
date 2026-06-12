@@ -476,7 +476,20 @@
       "addFirst": "Add your first service",
       "activateAria": "Activate {{name}}",
       "deactivateAria": "Deactivate {{name}}",
-      "editAria": "Edit {{name}}"
+      "editAria": "Edit {{name}}",
+      "materialsTitle": "Required materials (samagri)",
+      "samagriCount": "{{count}} samagri",
+      "showMaterialsAria": "Show materials for {{name}}",
+      "hideMaterialsAria": "Hide materials for {{name}}",
+      "noMaterials": "No materials added yet.",
+      "addFirstMaterial": "Add the first one",
+      "addMaterial": "Add material",
+      "adding": "Adding…",
+      "itemName": "Item name",
+      "quantityPlaceholder": "Quantity (e.g. 500g)",
+      "notesOptional": "Notes (optional)",
+      "editMaterialAria": "Edit {{name}}",
+      "deleteMaterialAria": "Delete {{name}}"
     },
     "serviceForm": {
       "back": "Back to services",
@@ -489,7 +502,6 @@
       "durationMin": "Duration (minutes)",
       "description": "Description",
       "descriptionPlaceholder": "What does this pooja include?",
-      "materialsNote": "Samagri (materials) for each service can be edited in the profile wizard.",
       "save": "Save",
       "saving": "Saving…",
       "cancel": "Cancel"
@@ -755,6 +767,22 @@
     "reviewCount": "{{count}} reviews",
     "completedPoojas": "{{count}} poojas completed",
     "minutes": "{{count}} min",
-    "signInNote": "Sign in to book this Pandit Ji"
+    "signInNote": "Sign in to book this Pandit Ji",
+    "signInToBook": "Sign in to Book",
+    "bookCardTitle": "Book this Pandit Ji",
+    "selectService": "Select a service",
+    "startingFrom": "Starting from {{price}}",
+    "checkAvailability": "Check availability",
+    "bookThisService": "Book",
+    "viewSamagri": "View samagri",
+    "hideSamagri": "Hide samagri",
+    "readMore": "Read more",
+    "readLess": "Show less",
+    "firstReview": "New on PanditConnect — be the first to review",
+    "showAllReviews": "Show all {{count}} reviews",
+    "panditReply": "Pandit Ji's reply",
+    "serves": "Serves",
+    "share": "Share",
+    "linkCopied": "Link copied"
   }
 }

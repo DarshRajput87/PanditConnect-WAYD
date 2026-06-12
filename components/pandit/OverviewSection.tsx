@@ -21,7 +21,7 @@ export function OverviewSection({ stats, inquiries, reviews, upcoming, chartData
   const { t } = useTranslation()
 
   return (
-    <div className="max-w-5xl space-y-5 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full space-y-5 p-4 pb-24 md:p-6 md:pb-6">
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
@@ -45,7 +45,7 @@ export function OverviewSection({ stats, inquiries, reviews, upcoming, chartData
         />
         <StatCard
           label={t('panditDash.overview.statResponseRate')}
-          value={`${Math.round(stats.responseRate * 100)}%`}
+          value={`${Math.min(Math.round(stats.responseRate * 100), 100)}%`}
           sub={t('panditDash.overview.requestsAnswered')}
           icon={Activity}
         />

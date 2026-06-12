@@ -5,6 +5,8 @@ import { Pandit } from '@/lib/db/models/Pandit'
 import { Booking } from '@/lib/db/models/Booking'
 import { Review } from '@/lib/db/models/Review'
 import { Pooja } from '@/lib/db/models/Pooja'
+import { Material } from '@/lib/db/models/Material'
+import { User } from '@/lib/db/models/User'
 import mongoose from 'mongoose'
 import type {
   BookingSummaryDTO,
@@ -14,6 +16,7 @@ import type {
   RevenueStatsDTO,
   RevenueRowDTO,
   ServiceDTO,
+  MaterialDTO,
   ReviewStatsDTO,
   ReviewDTO,
   PanditProfileSummaryDTO,
@@ -27,7 +30,9 @@ async function getSessionPandit() {
   const session = await auth()
   if (!session || session.user.role !== 'pandit') throw new Error('Unauthorized')
   await connectDB()
-  const pandit = await Pandit.findOne({ userId: session.user.id })
+  // lean(): this lookup runs once per dashboard action — plain object, no
+  // Mongoose document hydration. Callers only read fields, never .save().
+  const pandit = await Pandit.findOne({ userId: session.user.id }).lean()
   if (!pandit) throw new Error('Pandit profile not found')
   return pandit
 }
@@ -77,7 +82,8 @@ export async function getPanditOverviewStats(): Promise<OverviewStatsDTO | { err
       pendingRequests: pending,
       avgRating: reviewAgg[0]?.avg ?? 0,
       ratingCount: reviewAgg[0]?.count ?? 0,
-      responseRate: pandit.responseRate ?? 0,
+      // Stored as a 0–1 decimal; clamp in case legacy rows hold a 0–100 value.
+      responseRate: Math.min(pandit.responseRate ?? 0, 1),
     }
   } catch {
     return { error: true }
@@ -94,6 +100,7 @@ export async function getRecentInquiries(limit = 5): Promise<BookingSummaryDTO[]
     })
       .sort({ createdAt: -1 })
       .limit(limit)
+      .select('customerId poojaId scheduledAt address status expiresAt')
       .populate('customerId', 'name')
       .populate('poojaId', 'name price durationMin')
       .lean()
@@ -113,6 +120,7 @@ export async function getUpcomingBookings(limit = 5): Promise<BookingSummaryDTO[
     })
       .sort({ scheduledAt: 1 })
       .limit(limit)
+      .select('customerId poojaId scheduledAt address status expiresAt')
       .populate('customerId', 'name')
       .populate('poojaId', 'name price durationMin')
       .lean()
@@ -131,6 +139,7 @@ export async function getPanditInquiries(status: string, limit = 50): Promise<Bo
     const bookings = await Booking.find(filter)
       .sort(status === 'confirmed' ? { scheduledAt: 1 } : { createdAt: -1 })
       .limit(limit)
+      .select('customerId poojaId scheduledAt address status expiresAt')
       .populate('customerId', 'name')
       .populate('poojaId', 'name price durationMin')
       .lean()
@@ -145,6 +154,7 @@ export async function getBookingDetail(bookingId: string): Promise<BookingDetail
     const pandit = await getSessionPandit()
     if (!mongoose.isValidObjectId(bookingId)) return null
     const b = await Booking.findOne({ _id: bookingId, panditId: pandit._id })
+      .select('customerId poojaId scheduledAt address status expiresAt createdAt respondedAt cancellation')
       .populate('customerId', 'name email phone')
       .populate('poojaId', 'name price durationMin')
       .lean()
@@ -198,6 +208,7 @@ export async function getPanditRevenueStats(): Promise<RevenueStatsDTO | { error
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
 
     const completed = await Booking.find({ panditId: pandit._id, status: 'completed' })
+      .select('poojaId updatedAt')
       .populate('poojaId', 'price')
       .lean()
 
@@ -228,6 +239,7 @@ export async function getPanditRevenueTable(limit = 20): Promise<RevenueRowDTO[]
     const bookings = await Booking.find({ panditId: pandit._id, status: 'completed' })
       .sort({ updatedAt: -1 })
       .limit(limit)
+      .select('customerId poojaId updatedAt')
       .populate('customerId', 'name')
       .populate('poojaId', 'name price')
       .lean()
@@ -244,12 +256,34 @@ export async function getPanditRevenueTable(limit = 20): Promise<RevenueRowDTO[]
   }
 }
 
+function toMaterialDTO(m: { _id: unknown; itemName: string; quantity: string; notes?: string }): MaterialDTO {
+  return {
+    _id: String(m._id),
+    itemName: m.itemName,
+    quantity: m.quantity,
+    notes: m.notes || undefined,
+  }
+}
+
 export async function getPanditServices(): Promise<ServiceDTO[]> {
   try {
     const pandit = await getSessionPandit()
     const services = await Pooja.find({ panditId: pandit._id })
       .sort({ active: -1, createdAt: -1 })
+      .select('catalogKey name price durationMin description active')
       .lean()
+
+    const materials = await Material.find({ poojaId: { $in: services.map((s) => s._id) } })
+      .sort({ createdAt: 1 })
+      .lean()
+    const materialsByPooja = new Map<string, MaterialDTO[]>()
+    for (const m of materials) {
+      const key = String(m.poojaId)
+      const list = materialsByPooja.get(key) ?? []
+      list.push(toMaterialDTO(m))
+      materialsByPooja.set(key, list)
+    }
+
     return services.map((s) => ({
       _id: String(s._id),
       catalogKey: s.catalogKey,
@@ -258,6 +292,7 @@ export async function getPanditServices(): Promise<ServiceDTO[]> {
       durationMin: s.durationMin,
       description: s.description ?? '',
       active: s.active,
+      materials: materialsByPooja.get(String(s._id)) ?? [],
     }))
   } catch {
     return []
@@ -268,8 +303,11 @@ export async function getPanditService(serviceId: string): Promise<ServiceDTO | 
   try {
     const pandit = await getSessionPandit()
     if (!mongoose.isValidObjectId(serviceId)) return null
-    const s = await Pooja.findOne({ _id: serviceId, panditId: pandit._id }).lean()
+    const s = await Pooja.findOne({ _id: serviceId, panditId: pandit._id })
+      .select('catalogKey name price durationMin description active')
+      .lean()
     if (!s) return null
+    const materials = await Material.find({ poojaId: s._id }).sort({ createdAt: 1 }).lean()
     return {
       _id: String(s._id),
       catalogKey: s.catalogKey,
@@ -278,6 +316,7 @@ export async function getPanditService(serviceId: string): Promise<ServiceDTO | 
       durationMin: s.durationMin,
       description: s.description ?? '',
       active: s.active,
+      materials: materials.map(toMaterialDTO),
     }
   } catch {
     return null
@@ -326,6 +365,9 @@ export async function getPanditReviews(limit = 20): Promise<ReviewDTO[]> {
     const reviews = await Review.find({ panditId: pandit._id, status: 'published' })
       .sort({ createdAt: -1 })
       .limit(limit)
+      .select(
+        'customerId bookingId overall ritualKnowledge punctuality behaviour communication comment createdAt panditReply status'
+      )
       .populate('customerId', 'name')
       .populate({ path: 'bookingId', select: 'poojaId', populate: { path: 'poojaId', select: 'name' } })
       .lean()
@@ -357,15 +399,14 @@ export async function getPanditReviews(limit = 20): Promise<ReviewDTO[]> {
 export async function getPanditProfileSummary(): Promise<PanditProfileSummaryDTO | null> {
   try {
     const pandit = await getSessionPandit()
-    const populated = await pandit.populate<{ userId: { name?: string; email?: string; phone?: string } }>(
-      'userId',
-      'name email phone'
-    )
-    const servicesCount = await Pooja.countDocuments({ panditId: pandit._id, active: true })
+    const [user, servicesCount] = await Promise.all([
+      User.findById(pandit.userId).select('name email phone').lean(),
+      Pooja.countDocuments({ panditId: pandit._id, active: true }),
+    ])
     return {
-      name: populated.userId?.name ?? '',
-      email: populated.userId?.email ?? '',
-      phone: populated.userId?.phone ?? '',
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      phone: user?.phone ?? '',
       profilePhoto: pandit.profilePhoto ?? '',
       bio: pandit.bio ?? '',
       sampraday: pandit.sampraday ?? '',

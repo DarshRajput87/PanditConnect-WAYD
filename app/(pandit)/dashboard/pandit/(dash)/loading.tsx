@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="max-w-5xl space-y-5 p-4 md:p-6">
+    <div className="w-full space-y-5 p-4 md:p-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-2 rounded-xl border border-neutral-200 bg-white p-4">

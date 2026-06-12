@@ -44,7 +44,11 @@ export async function connectDB() {
     global._mongoose.promise = mongoose
       .connect(MONGODB_URI, {
         bufferCommands: false,
-        maxPoolSize: 5, // free-tier constraint
+        maxPoolSize: 10, // handle concurrent server actions without queueing
+        minPoolSize: 2, // keep warm connections so no cold handshake per burst
+        serverSelectionTimeoutMS: 8000, // fail fast instead of hanging 30s when DB is down
+        connectTimeoutMS: 8000,
+        socketTimeoutMS: 20000,
       })
       .catch((err) => {
         // Never cache a rejected promise — otherwise one early failure (DNS not yet

@@ -21,7 +21,7 @@ export function ReviewsSection({ stats, reviews }: Props) {
   ]
 
   return (
-    <div className="max-w-3xl space-y-5 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full space-y-5 p-4 pb-24 md:p-6 md:pb-6">
       {/* Stats row */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-neutral-200 bg-white p-4">

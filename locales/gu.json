@@ -476,7 +476,20 @@
       "addFirst": "તમારી પહેલી સેવા ઉમેરો",
       "activateAria": "{{name}} સક્રિય કરો",
       "deactivateAria": "{{name}} નિષ્ક્રિય કરો",
-      "editAria": "{{name}} સંપાદિત કરો"
+      "editAria": "{{name}} સંપાદિત કરો",
+      "materialsTitle": "જરૂરી સામગ્રી",
+      "samagriCount": "{{count}} સામગ્રી",
+      "showMaterialsAria": "{{name}} ની સામગ્રી બતાવો",
+      "hideMaterialsAria": "{{name}} ની સામગ્રી છુપાવો",
+      "noMaterials": "હજી કોઈ સામગ્રી ઉમેરી નથી.",
+      "addFirstMaterial": "પહેલી સામગ્રી ઉમેરો",
+      "addMaterial": "સામગ્રી ઉમેરો",
+      "adding": "ઉમેરી રહ્યા છીએ…",
+      "itemName": "વસ્તુનું નામ",
+      "quantityPlaceholder": "જથ્થો (દા.ત. 500 ગ્રામ)",
+      "notesOptional": "નોંધ (વૈકલ્પિક)",
+      "editMaterialAria": "{{name}} સંપાદિત કરો",
+      "deleteMaterialAria": "{{name}} કાઢી નાખો"
     },
     "serviceForm": {
       "back": "સેવાઓ પર પાછા",
@@ -489,7 +502,6 @@
       "durationMin": "અવધિ (મિનિટ)",
       "description": "વર્ણન",
       "descriptionPlaceholder": "આ પૂજામાં શું શામેલ છે?",
-      "materialsNote": "દરેક સેવાની સામગ્રી પ્રોફાઇલ વિઝાર્ડમાં સંપાદિત કરી શકાય છે.",
       "save": "સાચવો",
       "saving": "સચવાઈ રહ્યું છે…",
       "cancel": "રદ કરો"
@@ -755,6 +767,22 @@
     "reviewCount": "{{count}} સમીક્ષાઓ",
     "completedPoojas": "{{count}} પૂજાઓ પૂર્ણ",
     "minutes": "{{count}} મિનિટ",
-    "signInNote": "આ પંડિત જીને બુક કરવા સાઇન ઇન કરો"
+    "signInNote": "આ પંડિત જીને બુક કરવા સાઇન ઇન કરો",
+    "signInToBook": "બુક કરવા સાઇન ઇન કરો",
+    "bookCardTitle": "આ પંડિત જીને બુક કરો",
+    "selectService": "સેવા પસંદ કરો",
+    "startingFrom": "{{price}} થી શરૂ",
+    "checkAvailability": "ઉપલબ્ધતા જુઓ",
+    "bookThisService": "બુક કરો",
+    "viewSamagri": "સામગ્રી જુઓ",
+    "hideSamagri": "સામગ્રી છુપાવો",
+    "readMore": "વધુ વાંચો",
+    "readLess": "ઓછું બતાવો",
+    "firstReview": "PanditConnect પર નવા — સૌપ્રથમ સમીક્ષા કરો",
+    "showAllReviews": "બધી {{count}} સમીક્ષાઓ જુઓ",
+    "panditReply": "પંડિત જીનો જવાબ",
+    "serves": "સેવા વિસ્તાર",
+    "share": "શેર કરો",
+    "linkCopied": "લિંક કૉપિ થઈ"
   }
 }

@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="max-w-3xl p-4 md:p-6">
+    <div className="w-full p-4 md:p-6">
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
         <div className="flex gap-4 border-b border-neutral-200 px-4 py-3">
           {[1, 2, 3].map((i) => (

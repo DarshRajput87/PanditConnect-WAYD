@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db/connect'
 import { User } from '@/lib/db/models/User'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { RegisterSchema, OTPVerifySchema, CompleteProfileSchema } from '@/lib/validators/auth'
-import { Resend } from 'resend'
+import { sendEmail, isEmailConfigured } from '@/lib/email'
 import bcrypt from 'bcryptjs'
 import type { Role } from '@/types'
 
@@ -20,7 +20,6 @@ type VerifyResult =
 type ResendResult = { error: string } | { success: true }
 type CompleteResult = { error: string } | { success: true; role: Role }
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const OTP_EXPIRY = parseInt(process.env.OTP_EXPIRY_MINUTES || '10') * 60 * 1000
 const MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS || '5')
 
@@ -29,19 +28,18 @@ function generateOTP() {
 }
 
 async function sendOtpEmail(to: string, otp: string, subject: string) {
-  if (!resend) {
-    // Email provider not configured (e.g. local dev without RESEND_API_KEY).
-    // Skip the send so the flow does not crash; configure RESEND_API_KEY to enable.
+  if (!isEmailConfigured) {
+    // SMTP not configured (e.g. local dev without SMTP_* vars).
+    // Skip the send so the flow does not crash; set SMTP_HOST/USER/PASS to enable.
     if (process.env.NODE_ENV !== 'production') {
       // Dev convenience only: print the OTP so the verify flow is testable locally.
       console.info(`[auth][dev] OTP for ${to}: ${otp}`)
     } else {
-      console.warn('[auth] RESEND_API_KEY not set — OTP email skipped for', to)
+      console.warn('[auth] SMTP not configured — OTP email skipped for', to)
     }
     return
   }
-  await resend.emails.send({
-    from: 'PanditConnect <noreply@panditconnect.in>',
+  await sendEmail({
     to,
     subject,
     text: `Your OTP is ${otp}. Valid for ${process.env.OTP_EXPIRY_MINUTES || '10'} minutes.`,

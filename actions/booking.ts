@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth/config'
 import { connectDB } from '@/lib/db/connect'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { Booking } from '@/lib/db/models/Booking'
-import { Resend } from 'resend'
+import { sendEmail, isEmailConfigured } from '@/lib/email'
 import { z } from 'zod'
 import mongoose from 'mongoose'
 
@@ -17,20 +17,19 @@ type BookingErrorCode =
   | 'server'
 export type BookingActionResult = { error: { code: BookingErrorCode } } | { success: true }
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-
 const CancelReasonSchema = z.string().trim().min(5).max(200)
 
 async function getSessionPandit() {
   const session = await auth()
   if (!session || session.user.role !== 'pandit') return null
   await connectDB()
-  return Pandit.findOne({ userId: session.user.id })
+  // Callers only need the _id for ownership checks.
+  return Pandit.findOne({ userId: session.user.id }).select('_id').lean()
 }
 
 async function notifyParty(bookingId: string, party: 'customer' | 'pandit', subject: string, text: string) {
-  if (!resend) {
-    console.info(`[booking][dev] email skipped (no RESEND_API_KEY): ${subject}`)
+  if (!isEmailConfigured) {
+    console.info(`[booking][dev] email skipped (SMTP not configured): ${subject}`)
     return
   }
   try {
@@ -51,12 +50,7 @@ async function notifyParty(bookingId: string, party: 'customer' | 'pandit', subj
       to = booking?.panditId?.userId?.email
     }
     if (!to) return
-    await resend.emails.send({
-      from: 'PanditConnect <noreply@panditconnect.in>',
-      to,
-      subject,
-      text,
-    })
+    await sendEmail({ to, subject, text })
   } catch (e) {
     // Notification failure must never fail the booking state change.
     console.warn('[booking] notification failed', e)
@@ -153,7 +147,7 @@ export async function cancelBooking(bookingId: string, reason: string): Promise<
     let booking
     let cancellableStatuses: string[]
     if (session.user.role === 'pandit') {
-      const pandit = await Pandit.findOne({ userId: session.user.id })
+      const pandit = await Pandit.findOne({ userId: session.user.id }).select('_id').lean()
       if (!pandit) return { error: { code: 'unauthorized' } }
       booking = await Booking.findOne({ _id: bookingId, panditId: pandit._id })
       cancellableStatuses = ['confirmed']

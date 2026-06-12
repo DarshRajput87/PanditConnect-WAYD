@@ -15,7 +15,7 @@ export function RevenueSection({ stats, rows }: Props) {
   const { t, i18n } = useTranslation()
 
   return (
-    <div className="max-w-4xl space-y-5 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="w-full space-y-5 p-4 pb-24 md:p-6 md:pb-6">
       {/* MVP payment notice */}
       <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />

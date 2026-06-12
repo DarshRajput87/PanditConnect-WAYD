@@ -52,6 +52,13 @@ export interface RevenueRowDTO {
   completedAt: string
 }
 
+export interface MaterialDTO {
+  _id: string
+  itemName: string
+  quantity: string
+  notes?: string
+}
+
 export interface ServiceDTO {
   _id: string
   catalogKey: string
@@ -60,6 +67,7 @@ export interface ServiceDTO {
   durationMin: number
   description: string
   active: boolean
+  materials: MaterialDTO[]
 }
 
 export interface ReviewStatsDTO {
@@ -172,9 +180,41 @@ export interface CustomerSettingsDTO {
 }
 
 // Public pandit profile (/pandit/[id]) — visible to logged-out visitors.
+export interface PublicServiceDTO {
+  _id: string
+  name: string
+  price: number
+  durationMin: number
+  description: string
+  materials: { itemName: string; quantity: string; notes?: string }[]
+}
+
+export interface PublicReviewDTO {
+  _id: string
+  customerName: string
+  overall: number
+  ritualKnowledge?: number
+  punctuality?: number
+  behaviour?: number
+  communication?: number
+  comment: string
+  createdAt: string
+  panditReply: { text: string; at: string } | null
+}
+
+export interface PublicReviewStatsDTO {
+  // dist[0] = count of 1★ reviews … dist[4] = count of 5★
+  dist: number[]
+  ritualKnowledge: number
+  punctuality: number
+  behaviour: number
+  communication: number
+}
+
 export interface PublicPanditProfileDTO {
   _id: string
   name: string
+  profilePhoto: string
   bio: string
   sampraday: string
   experienceYears: number
@@ -185,8 +225,9 @@ export interface PublicPanditProfileDTO {
   ratingAvg: number
   ratingCount: number
   completedBookings: number
-  services: { _id: string; name: string; price: number; durationMin: number; description: string }[]
-  reviews: { _id: string; customerName: string; overall: number; comment: string; createdAt: string }[]
+  services: PublicServiceDTO[]
+  reviews: PublicReviewDTO[]
+  reviewStats: PublicReviewStatsDTO
 }
 
 export interface PanditProfileSummaryDTO {

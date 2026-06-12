@@ -7,7 +7,7 @@ import { Booking } from '@/lib/db/models/Booking'
 import { Review } from '@/lib/db/models/Review'
 // Side-effect import: registers the Pooja model so .populate('poojaId', …) works.
 import '@/lib/db/models/Pooja'
-import { searchVerifiedPandits } from '@/lib/db/search'
+import { searchVerifiedPanditsCached } from '@/lib/db/search'
 import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
 import { z } from 'zod'
@@ -94,6 +94,7 @@ export async function getUpcomingBookings(limit = 3): Promise<CustomerBookingDTO
     })
       .sort({ scheduledAt: 1 })
       .limit(limit)
+      .select('panditId poojaId scheduledAt status')
       .populate(POPULATE_PANDIT_NAME)
       .populate('poojaId', 'name price')
       .lean()
@@ -110,6 +111,7 @@ export async function getPendingReviews(limit = 5): Promise<CustomerBookingDTO[]
     const [completed, reviewedSet] = await Promise.all([
       Booking.find({ customerId, status: 'completed' })
         .sort({ updatedAt: -1 })
+        .select('panditId poojaId scheduledAt status')
         .populate(POPULATE_PANDIT_NAME)
         .populate('poojaId', 'name price')
         .lean(),
@@ -150,6 +152,7 @@ export async function getCustomerBookings(
         .sort({ scheduledAt: -1 })
         .skip((safePage - 1) * limit)
         .limit(limit)
+        .select('panditId poojaId scheduledAt status')
         .populate(POPULATE_PANDIT_NAME)
         .populate('poojaId', 'name price')
         .lean(),
@@ -172,6 +175,7 @@ export async function getCustomerBookingDetail(bookingId: string): Promise<Custo
     if (!mongoose.isValidObjectId(bookingId)) return null
 
     const booking = await Booking.findOne({ _id: bookingId, customerId })
+      .select('panditId poojaId scheduledAt address status cancellation respondedAt createdAt updatedAt')
       .populate({
         path: 'panditId',
         select: 'sampraday experienceYears userId',
@@ -181,7 +185,7 @@ export async function getCustomerBookingDetail(bookingId: string): Promise<Custo
       .lean()
     if (!booking) return null
 
-    const hasReview = Boolean(await Review.findOne({ bookingId: booking._id }).lean())
+    const hasReview = Boolean(await Review.exists({ bookingId: booking._id }))
     const pandit = booking.panditId as unknown as PopPanditWithUser
     const pooja = booking.poojaId as unknown as PopPooja
 
@@ -221,6 +225,7 @@ export async function getBookingForReview(bookingId: string): Promise<BookingFor
     if (!mongoose.isValidObjectId(bookingId)) return null
 
     const booking = await Booking.findOne({ _id: bookingId, customerId })
+      .select('panditId poojaId scheduledAt status updatedAt')
       .populate(POPULATE_PANDIT_NAME)
       .populate('poojaId', 'name')
       .lean()
@@ -230,7 +235,7 @@ export async function getBookingForReview(bookingId: string): Promise<BookingFor
     const daysSince = (Date.now() - booking.updatedAt.getTime()) / 86_400_000
     if (booking.status === 'completed' && daysSince > 30) return null
 
-    const hasReview = Boolean(await Review.findOne({ bookingId: booking._id }).lean())
+    const hasReview = Boolean(await Review.exists({ bookingId: booking._id }))
     const pandit = booking.panditId as unknown as PopPanditWithUser
     const pooja = booking.poojaId as unknown as PopPooja
 
@@ -253,6 +258,7 @@ export async function getSuggestedPandits(limit = 3): Promise<SuggestedPanditDTO
     const pandits = await Pandit.find({ verificationStatus: 'verified' })
       .sort({ ratingWeighted: -1, completedBookings: -1 })
       .limit(limit)
+      .select('userId ratingAvg ratingCount verificationStatus specialization languages')
       .populate<{ userId: { name?: string } }>('userId', 'name')
       .lean()
 
@@ -283,7 +289,7 @@ export interface SearchParamsInput {
 export async function searchPandits(params: SearchParamsInput): Promise<PanditSearchResultDTO[]> {
   try {
     await getCustomerId()
-    return await searchVerifiedPandits(params)
+    return await searchVerifiedPanditsCached(params)
   } catch {
     return []
   }
@@ -295,6 +301,9 @@ export async function getCustomerReviews(limit = 20): Promise<CustomerReviewDTO[
     const reviews = await Review.find({ customerId, status: 'published' })
       .sort({ createdAt: -1 })
       .limit(limit)
+      .select(
+        'panditId bookingId overall ritualKnowledge punctuality behaviour communication comment createdAt panditReply'
+      )
       .populate(POPULATE_PANDIT_NAME)
       .populate({
         path: 'bookingId',

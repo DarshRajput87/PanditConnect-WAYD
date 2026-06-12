@@ -265,7 +265,7 @@ export default function LandingPage() {
 
       {/* ── Trust strip ────────────────────────────────────────────────── */}
       <section className="border-y border-neutral-100 bg-white py-5">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="w-full px-4 md:px-8">
           <div className="grid grid-cols-3 gap-4">
             <TrustItem icon={ShieldCheck} label="Verified Pandits" sub="ID-verified, reviewed" />
             <TrustItem icon={IndianRupee} label="Transparent Pricing" sub="No hidden charges" />
@@ -276,7 +276,7 @@ export default function LandingPage() {
 
       {/* ── Browse poojas — image cards ────────────────────────────────── */}
       <section className="bg-neutral-50 py-20">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="w-full px-4 md:px-8">
           <AnimateOnScroll animation="fade-up">
             <div className="mb-12">
               <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-orange-500">Our Services</p>
@@ -320,7 +320,7 @@ export default function LandingPage() {
 
       {/* ── How it works — alternating with images ─────────────────────── */}
       <section id="how" className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="w-full px-4 md:px-8">
           <AnimateOnScroll animation="fade-up">
             <div className="mb-12 md:mb-16">
               <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-orange-500">Simple Process</p>
@@ -429,7 +429,7 @@ export default function LandingPage() {
 
       {/* ── Testimonials — horizontal scroll ───────────────────────────── */}
       <section className="overflow-hidden bg-neutral-50 py-20">
-        <div className="mx-auto mb-10 max-w-7xl px-4">
+        <div className="mb-10 w-full px-4 md:px-8">
           <AnimateOnScroll animation="fade-up">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -483,7 +483,7 @@ export default function LandingPage() {
 
       {/* ── For Pandits ────────────────────────────────────────────────── */}
       <section className="border-y border-neutral-100 bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="w-full px-4 md:px-8">
           <AnimateOnScroll animation="fade-up">
             <div className="flex flex-col items-center gap-8 lg:flex-row">
               <div className="relative h-48 w-full flex-shrink-0 overflow-hidden rounded-2xl lg:h-64 lg:w-64">
