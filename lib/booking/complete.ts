@@ -6,6 +6,7 @@ import { Pandit } from '@/lib/db/models/Pandit'
 import { Payment } from '@/lib/db/models/Payment'
 import { sendEmail, isEmailConfigured } from '@/lib/email/mailer'
 import { sendReviewRequestToCustomer } from '@/lib/notifications/email'
+import { APP_URL } from '@/lib/app-url'
 
 /**
  * Flip a confirmed booking to completed. Returns false if someone else
@@ -46,7 +47,7 @@ export async function sendReviewReminderEmail(bookingId: unknown): Promise<void>
     const to = booking?.customerId?.email
     if (!booking || !to) return
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = APP_URL
     await sendEmail({
       to,
       subject: `A quick reminder — review your ${booking.poojaId?.name ?? 'pooja'}`,

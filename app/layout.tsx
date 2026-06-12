@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers/Providers'
 import { PageTransition } from '@/components/shared/PageTransition'
+import { APP_URL } from '@/lib/app-url'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   title: 'PanditConnect — Book Trusted Pandit Ji Online',
   description:
     'Find and book verified Pandits for poojas, sanskars and ceremonies. Transparent pricing, clear samagri lists, real reviews.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(APP_URL),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
