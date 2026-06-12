@@ -7,6 +7,7 @@ import { Review } from '@/lib/db/models/Review'
 import { Pooja } from '@/lib/db/models/Pooja'
 import { Material } from '@/lib/db/models/Material'
 import { User } from '@/lib/db/models/User'
+import { istSlotToUtc, istDateStr } from '@/lib/booking/slots'
 import mongoose from 'mongoose'
 import type {
   BookingSummaryDTO,
@@ -17,6 +18,8 @@ import type {
   RevenueRowDTO,
   ServiceDTO,
   MaterialDTO,
+  CalendarBookingDTO,
+  PanditAvailabilityDTO,
   ReviewStatsDTO,
   ReviewDTO,
   PanditProfileSummaryDTO,
@@ -320,6 +323,71 @@ export async function getPanditService(serviceId: string): Promise<ServiceDTO | 
     }
   } catch {
     return null
+  }
+}
+
+// Bookings for the calendar view of one IST month, padded a week either side
+// so the weekly view renders complete edge weeks.
+export async function getPanditCalendarBookings(year: number, month: number): Promise<CalendarBookingDTO[]> {
+  try {
+    const pandit = await getSessionPandit()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const monthStart = istSlotToUtc(`${year}-${pad(month + 1)}-01`, 0)
+    const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${pad(month + 2)}-01`
+    const monthEnd = istSlotToUtc(nextMonth, 0)
+    const WEEK_MS = 7 * 86_400_000
+
+    const bookings = await Booking.find({
+      panditId: pandit._id,
+      status: { $in: ['requested', 'confirmed', 'completed'] },
+      scheduledAt: { $gte: new Date(monthStart.getTime() - WEEK_MS), $lt: new Date(monthEnd.getTime() + WEEK_MS) },
+    })
+      .sort({ scheduledAt: 1 })
+      .select('scheduledAt status customerId poojaId address')
+      .populate('customerId', 'name')
+      .populate('poojaId', 'name durationMin price')
+      .lean()
+
+    return bookings.map((b) => {
+      const customer = b.customerId as PopUser
+      const pooja = b.poojaId as PopPooja & { durationMin?: number } | null
+      return {
+        _id: String(b._id),
+        scheduledAt: b.scheduledAt.toISOString(),
+        status: b.status,
+        customerName: customer?.name ?? 'Customer',
+        poojaName: pooja?.name ?? '',
+        durationMin: pooja?.durationMin ?? 60,
+        price: pooja?.price ?? 0,
+        city: b.address?.city ?? '',
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+export async function getPanditAvailability(): Promise<PanditAvailabilityDTO> {
+  const fallback: PanditAvailabilityDTO = {
+    workingDays: [0, 1, 2, 3, 4, 5, 6],
+    workingHoursStart: '06:00',
+    workingHoursEnd: '20:00',
+    maxPerDay: null,
+    blockedDates: [],
+  }
+  try {
+    const pandit = await getSessionPandit()
+    const av = pandit.availability
+    if (!av) return fallback
+    return {
+      workingDays: av.workingDays?.length ? av.workingDays : fallback.workingDays,
+      workingHoursStart: av.workingHoursStart || fallback.workingHoursStart,
+      workingHoursEnd: av.workingHoursEnd || fallback.workingHoursEnd,
+      maxPerDay: av.maxPerDay ?? null,
+      blockedDates: (av.blockedDates ?? []).map((d) => istDateStr(new Date(d))),
+    }
+  } catch {
+    return fallback
   }
 }
 

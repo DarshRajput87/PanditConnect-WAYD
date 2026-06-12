@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendEmail, isEmailConfigured } from '@/lib/email'
+import { sendVerificationApproved, sendVerificationRejected } from '@/lib/notifications/email'
 import { auth } from '@/lib/auth/config'
 import { connectDB } from '@/lib/db/connect'
 import { Pandit } from '@/lib/db/models/Pandit'
@@ -49,20 +49,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Notify the pandit (fire and forget; never block the response on email).
-  const user = await User.findById(pandit.userId).lean()
-  if (user?.email && isEmailConfigured) {
-    const msg =
-      action === 'approve'
-        ? 'Congratulations! Your profile is verified and now live on PanditConnect.'
-        : `Your verification was not approved. Reason: ${reason!.trim()}. You may resubmit after making corrections.`
-    sendEmail({
-      to: user.email,
-      subject:
-        action === 'approve'
-          ? 'Profile Verified — PanditConnect'
-          : 'Verification Update — PanditConnect',
-      text: msg,
-    }).catch(console.error)
+  if (action === 'approve') {
+    sendVerificationApproved(String(pandit.userId)).catch(console.error)
+  } else {
+    sendVerificationRejected(String(pandit.userId), reason!.trim()).catch(console.error)
   }
 
   return NextResponse.json({ success: true })

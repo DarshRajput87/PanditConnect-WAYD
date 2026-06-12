@@ -3,7 +3,14 @@ import { auth } from '@/lib/auth/config'
 import { connectDB } from '@/lib/db/connect'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { Booking } from '@/lib/db/models/Booking'
-import { sendEmail, isEmailConfigured } from '@/lib/email'
+import { sendEmail, isEmailConfigured } from '@/lib/email/mailer'
+import { refundBookingPaymentIfAny } from '@/lib/payments/razorpay'
+import { completeBooking } from '@/lib/booking/complete'
+import {
+  sendBookingConfirmedToCustomer,
+  sendBookingDeclinedToCustomer,
+  sendReviewRequestToCustomer,
+} from '@/lib/notifications/email'
 import { z } from 'zod'
 import mongoose from 'mongoose'
 
@@ -96,13 +103,16 @@ export async function respondToBooking(
     await booking.save()
     await refreshResponseRate(pandit._id)
 
-    await notifyCustomer(
-      bookingId,
-      action === 'accept' ? 'Your booking is confirmed' : 'Update on your booking request',
-      action === 'accept'
-        ? 'Good news — your Pandit Ji has accepted your booking request. See the details in your PanditConnect dashboard.'
-        : 'Unfortunately your booking request was declined. You can search for another verified Pandit on PanditConnect.'
-    )
+    // Online payments are refunded in full when the pandit declines.
+    if (action === 'decline') {
+      await refundBookingPaymentIfAny(booking._id, 'Pandit declined booking')
+    }
+
+    if (action === 'accept') {
+      await sendBookingConfirmedToCustomer(bookingId)
+    } else {
+      await sendBookingDeclinedToCustomer(bookingId)
+    }
     return { success: true }
   } catch (e) {
     console.error('[booking] respondToBooking failed', e)
@@ -118,10 +128,14 @@ export async function markBookingCompleted(bookingId: string): Promise<BookingAc
     const booking = await Booking.findOne({ _id: bookingId, panditId: pandit._id })
     if (!booking) return { error: { code: 'not_found' } }
     if (booking.status !== 'confirmed') return { error: { code: 'invalid_state' } }
+    // The ceremony must already have happened.
+    if (booking.scheduledAt.getTime() > Date.now()) return { error: { code: 'invalid_state' } }
 
-    booking.status = 'completed'
-    await booking.save()
-    await Pandit.updateOne({ _id: pandit._id }, { $inc: { completedBookings: 1 } })
+    const completed = await completeBooking(booking._id, pandit._id)
+    if (!completed) return { error: { code: 'invalid_state' } }
+
+    // Fire-and-forget: the review nudge must never block completion.
+    sendReviewRequestToCustomer(String(booking._id)).catch(() => {})
     return { success: true }
   } catch (e) {
     console.error('[booking] markBookingCompleted failed', e)
@@ -166,6 +180,9 @@ export async function cancelBooking(bookingId: string, reason: string): Promise<
       at: new Date(),
     }
     await booking.save()
+
+    // The ceremony is off — return any online payment in full.
+    await refundBookingPaymentIfAny(booking._id, 'Booking cancelled')
 
     if (session.user.role === 'pandit') {
       await notifyCustomer(

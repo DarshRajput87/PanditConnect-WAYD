@@ -9,11 +9,13 @@ import { Pandit } from '@/lib/db/models/Pandit'
 import { Booking } from '@/lib/db/models/Booking'
 import { Review } from '@/lib/db/models/Review'
 import { Pooja } from '@/lib/db/models/Pooja'
+import { Material } from '@/lib/db/models/Material'
+import { Payment } from '@/lib/db/models/Payment'
 
 async function ensureIndexes() {
   await connectDB()
 
-  const models = [User, Pandit, Booking, Review, Pooja]
+  const models = [User, Pandit, Booking, Review, Pooja, Material, Payment]
   for (const model of models) {
     await model.createIndexes()
     const indexes = await model.collection.indexes()

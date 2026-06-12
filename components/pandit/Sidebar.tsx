@@ -7,6 +7,7 @@ import {
   Flame,
   LayoutDashboard,
   Inbox,
+  Calendar,
   BarChart3,
   ListChecks,
   Star,
@@ -27,6 +28,7 @@ interface NavEntry {
 const NAV: NavEntry[] = [
   { href: '/dashboard/pandit/overview', icon: LayoutDashboard, labelKey: 'panditDash.nav.overview' },
   { href: '/dashboard/pandit/inquiries', icon: Inbox, labelKey: 'panditDash.nav.inquiries', badge: true },
+  { href: '/dashboard/pandit/calendar', icon: Calendar, labelKey: 'panditDash.nav.calendar' },
   { href: '/dashboard/pandit/revenue', icon: BarChart3, labelKey: 'panditDash.nav.revenue' },
   { href: '/dashboard/pandit/services', icon: ListChecks, labelKey: 'panditDash.nav.services' },
   { href: '/dashboard/pandit/reviews', icon: Star, labelKey: 'panditDash.nav.reviews' },
@@ -81,13 +83,13 @@ export function Sidebar({ name, verificationStatus, pendingCount = 0 }: Props) {
           <p className="px-4 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wider text-neutral-400">
             {t('panditDash.nav.main')}
           </p>
-          {NAV.slice(0, 3).map((item) => (
+          {NAV.slice(0, 4).map((item) => (
             <NavItem key={item.href} item={item} active={pathname.startsWith(item.href)} pendingCount={pendingCount} />
           ))}
           <p className="px-4 pb-1 pt-4 text-[10px] font-medium uppercase tracking-wider text-neutral-400">
             {t('panditDash.nav.manage')}
           </p>
-          {NAV.slice(3).map((item) => (
+          {NAV.slice(4).map((item) => (
             <NavItem key={item.href} item={item} active={pathname.startsWith(item.href)} pendingCount={pendingCount} />
           ))}
         </nav>

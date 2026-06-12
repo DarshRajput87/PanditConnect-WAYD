@@ -5,6 +5,7 @@ import { User } from '@/lib/db/models/User'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { Booking } from '@/lib/db/models/Booking'
 import { Review } from '@/lib/db/models/Review'
+import { Payment } from '@/lib/db/models/Payment'
 // Side-effect import: registers the Pooja model so .populate('poojaId', …) works.
 import '@/lib/db/models/Pooja'
 import { searchVerifiedPanditsCached } from '@/lib/db/search'
@@ -15,6 +16,7 @@ import type {
   CustomerStatsDTO,
   CustomerBookingDTO,
   CustomerBookingDetailDTO,
+  BookingConfirmedDTO,
   SuggestedPanditDTO,
   PanditSearchResultDTO,
   CustomerReviewDTO,
@@ -175,7 +177,7 @@ export async function getCustomerBookingDetail(bookingId: string): Promise<Custo
     if (!mongoose.isValidObjectId(bookingId)) return null
 
     const booking = await Booking.findOne({ _id: bookingId, customerId })
-      .select('panditId poojaId scheduledAt address status cancellation respondedAt createdAt updatedAt')
+      .select('panditId poojaId scheduledAt address status cancellation respondedAt completedAt createdAt updatedAt')
       .populate({
         path: 'panditId',
         select: 'sampraday experienceYears userId',
@@ -185,7 +187,10 @@ export async function getCustomerBookingDetail(bookingId: string): Promise<Custo
       .lean()
     if (!booking) return null
 
-    const hasReview = Boolean(await Review.exists({ bookingId: booking._id }))
+    const [hasReview, payment] = await Promise.all([
+      Review.exists({ bookingId: booking._id }).then(Boolean),
+      Payment.findOne({ bookingId: booking._id }).select('method status amount').lean(),
+    ])
     const pandit = booking.panditId as unknown as PopPanditWithUser
     const pooja = booking.poojaId as unknown as PopPooja
 
@@ -208,11 +213,47 @@ export async function getCustomerBookingDetail(bookingId: string): Promise<Custo
             at: booking.cancellation.at.toISOString(),
           }
         : null,
+      payment: payment
+        ? { method: payment.method, status: payment.status, amount: Math.round(payment.amount / 100) }
+        : null,
       timestamps: {
         requested: booking.createdAt.toISOString(),
         responded: booking.respondedAt?.toISOString() ?? null,
-        completed: booking.status === 'completed' ? booking.updatedAt.toISOString() : null,
+        completed:
+          booking.status === 'completed' ? (booking.completedAt ?? booking.updatedAt).toISOString() : null,
       },
+    }
+  } catch {
+    return null
+  }
+}
+
+// Post-booking confirmation page data — verifies ownership.
+export async function getBookingConfirmation(bookingId: string): Promise<BookingConfirmedDTO | null> {
+  try {
+    const customerId = await getCustomerId()
+    if (!mongoose.isValidObjectId(bookingId)) return null
+
+    const booking = await Booking.findOne({ _id: bookingId, customerId })
+      .select('panditId poojaId scheduledAt address paymentMethod')
+      .populate(POPULATE_PANDIT_NAME)
+      .populate('poojaId', 'name price')
+      .lean()
+    if (!booking) return null
+
+    const payment = await Payment.findOne({ bookingId: booking._id }).select('status').lean()
+    const pandit = booking.panditId as unknown as PopPanditWithUser
+    const pooja = booking.poojaId as unknown as PopPooja
+
+    return {
+      _id: String(booking._id),
+      panditName: pandit?.userId?.name ?? 'Pandit Ji',
+      poojaName: pooja?.name ?? '',
+      scheduledAt: booking.scheduledAt.toISOString(),
+      address: booking.address,
+      price: pooja?.price ?? 0,
+      paymentMethod: booking.paymentMethod ?? 'cash',
+      paymentStatus: payment?.status ?? 'pending',
     }
   } catch {
     return null
@@ -225,14 +266,14 @@ export async function getBookingForReview(bookingId: string): Promise<BookingFor
     if (!mongoose.isValidObjectId(bookingId)) return null
 
     const booking = await Booking.findOne({ _id: bookingId, customerId })
-      .select('panditId poojaId scheduledAt status updatedAt')
+      .select('panditId poojaId scheduledAt status completedAt updatedAt')
       .populate(POPULATE_PANDIT_NAME)
       .populate('poojaId', 'name')
       .lean()
     if (!booking) return null
 
-    // 30-day review window from completion (updatedAt proxy).
-    const daysSince = (Date.now() - booking.updatedAt.getTime()) / 86_400_000
+    // 30-day review window from completion (completedAt; legacy rows use updatedAt).
+    const daysSince = (Date.now() - (booking.completedAt ?? booking.updatedAt).getTime()) / 86_400_000
     if (booking.status === 'completed' && daysSince > 30) return null
 
     const hasReview = Boolean(await Review.exists({ bookingId: booking._id }))

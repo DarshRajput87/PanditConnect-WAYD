@@ -113,17 +113,36 @@ export interface CustomerBookingDTO {
   hasReview: boolean
 }
 
+export interface BookingPaymentDTO {
+  method: 'cash' | 'razorpay'
+  status: string // pending | paid | refunded | failed
+  amount: number // rupees
+}
+
 export interface CustomerBookingDetailDTO extends CustomerBookingDTO {
   panditId: string
   sampraday: string
   experienceYears: number
   address: { line1: string; city: string; state: string; pincode: string }
   cancellation: { byRole: 'you' | 'pandit'; reason: string; at: string } | null
+  payment: BookingPaymentDTO | null
   timestamps: {
     requested: string
     responded: string | null
     completed: string | null
   }
+}
+
+// Post-booking confirmation page (/booking-confirmed/[id]).
+export interface BookingConfirmedDTO {
+  _id: string
+  panditName: string
+  poojaName: string
+  scheduledAt: string
+  address: { line1: string; city: string; state: string; pincode: string }
+  price: number
+  paymentMethod: 'cash' | 'razorpay'
+  paymentStatus: string
 }
 
 export interface SuggestedPanditDTO {
@@ -228,6 +247,46 @@ export interface PublicPanditProfileDTO {
   services: PublicServiceDTO[]
   reviews: PublicReviewDTO[]
   reviewStats: PublicReviewStatsDTO
+}
+
+// Pandit calendar (/dashboard/pandit/calendar) DTOs.
+export interface CalendarBookingDTO {
+  _id: string
+  scheduledAt: string
+  status: string
+  customerName: string
+  poojaName: string
+  durationMin: number
+  price: number
+  city: string
+}
+
+export interface PanditAvailabilityDTO {
+  workingDays: number[] // 0=Sun … 6=Sat
+  workingHoursStart: string // 'HH:mm' IST
+  workingHoursEnd: string
+  maxPerDay: number | null
+  blockedDates: string[] // 'YYYY-MM-DD' IST
+}
+
+// Booking wizard (/book/[panditId]) DTOs.
+export interface BookPanditDTO {
+  _id: string
+  name: string
+  profilePhoto: string
+  sampraday: string
+  experienceYears: number
+  ratingAvg: number
+  ratingCount: number
+  serviceAreas: string[]
+}
+
+export interface BookPoojaDTO {
+  _id: string
+  name: string
+  price: number
+  durationMin: number
+  catalogKey: string
 }
 
 export interface PanditProfileSummaryDTO {

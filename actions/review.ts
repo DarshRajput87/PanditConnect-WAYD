@@ -63,8 +63,9 @@ export async function createReview(bookingId: string, input: unknown): Promise<R
     if (!booking) return { error: { code: 'not_found' } }
     if (booking.status !== 'completed') return { error: { code: 'invalid_state' } }
 
-    // updatedAt is the completion timestamp proxy (status flipped to completed then).
-    const daysSince = (Date.now() - booking.updatedAt.getTime()) / 86_400_000
+    // completedAt is set on completion; legacy rows fall back to updatedAt.
+    const completedAt = booking.completedAt ?? booking.updatedAt
+    const daysSince = (Date.now() - completedAt.getTime()) / 86_400_000
     if (daysSince > REVIEW_WINDOW_DAYS) return { error: { code: 'window_closed' } }
 
     const existing = await Review.exists({ bookingId: booking._id })

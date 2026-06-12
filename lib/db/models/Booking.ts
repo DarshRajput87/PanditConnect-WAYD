@@ -56,6 +56,13 @@ const BookingSchema = new Schema<BookingDoc>(
 
 // Critical: compound index supports the double-booking conflict check
 BookingSchema.index({ panditId: 1, scheduledAt: 1, status: 1 })
+// Atomic last line of defence against double booking: two active bookings can
+// never share the exact same start instant. Inserts that lose the race throw
+// E11000, which the payment actions translate to a "slot taken" error.
+BookingSchema.index(
+  { panditId: 1, scheduledAt: 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ['requested', 'confirmed'] } } }
+)
 BookingSchema.index({ customerId: 1, status: 1 })
 BookingSchema.index({ status: 1, expiresAt: 1 }) // for the expiry job
 // Inquiry tabs: filter by pandit+status, newest first

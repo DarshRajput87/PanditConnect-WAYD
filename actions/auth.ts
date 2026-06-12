@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db/connect'
 import { User } from '@/lib/db/models/User'
 import { Pandit } from '@/lib/db/models/Pandit'
 import { RegisterSchema, OTPVerifySchema, CompleteProfileSchema } from '@/lib/validators/auth'
-import { sendEmail, isEmailConfigured } from '@/lib/email'
+import { sendEmail, isEmailConfigured } from '@/lib/email/mailer'
 import bcrypt from 'bcryptjs'
 import type { Role } from '@/types'
 
@@ -27,24 +27,7 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-async function sendOtpEmail(to: string, otp: string, subject: string) {
-  if (!isEmailConfigured) {
-    // SMTP not configured (e.g. local dev without SMTP_* vars).
-    // Skip the send so the flow does not crash; set SMTP_HOST/USER/PASS to enable.
-    if (process.env.NODE_ENV !== 'production') {
-      // Dev convenience only: print the OTP so the verify flow is testable locally.
-      console.info(`[auth][dev] OTP for ${to}: ${otp}`)
-    } else {
-      console.warn('[auth] SMTP not configured — OTP email skipped for', to)
-    }
-    return
-  }
-  await sendEmail({
-    to,
-    subject,
-    text: `Your OTP is ${otp}. Valid for ${process.env.OTP_EXPIRY_MINUTES || '10'} minutes.`,
-  })
-}
+// sendOtpEmail helper removed in favor of direct customized calls to sendEmail with fallbacks.
 
 export async function registerUser(formData: unknown): Promise<RegisterResult> {
   const parsed = RegisterSchema.safeParse(formData)
@@ -87,7 +70,19 @@ export async function registerUser(formData: unknown): Promise<RegisterResult> {
   }
 
   // Send OTP email — fire and forget
-  sendOtpEmail(email, otp, 'Verify your PanditConnect account').catch(console.error)
+  if (!isEmailConfigured) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`[auth][dev] OTP for ${email}: ${otp}`)
+    } else {
+      console.warn('[auth] SMTP not configured — OTP email skipped for', email)
+    }
+  } else {
+    sendEmail({
+      to: email,
+      subject: 'Your PanditConnect OTP — Verify your account',
+      text: `Namaste ${name},\n\nYour OTP to verify your PanditConnect account is:\n\n${otp}\n\nThis OTP is valid for ${process.env.OTP_EXPIRY_MINUTES || 10} minutes.\nDo not share this OTP with anyone.\n\nIf you did not request this, please ignore this email.\n\n— Team PanditConnect`,
+    }).catch(console.error)
+  }
 
   return { success: true, email }
 }
@@ -204,6 +199,18 @@ export async function resendOTP(email: string): Promise<ResendResult> {
     { otpHash, otpExpiry: new Date(Date.now() + OTP_EXPIRY), otpAttempts: 0 }
   )
 
-  await sendOtpEmail(email, otp, 'New OTP — PanditConnect')
+  if (!isEmailConfigured) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`[auth][dev] Resent OTP for ${email}: ${otp}`)
+    } else {
+      console.warn('[auth] SMTP not configured — OTP email skipped for', email)
+    }
+  } else {
+    await sendEmail({
+      to: email,
+      subject: 'New OTP — PanditConnect',
+      text: `Namaste,\n\nYour new OTP is:\n\n${otp}\n\nValid for ${process.env.OTP_EXPIRY_MINUTES || 10} minutes.\n\n— Team PanditConnect`,
+    })
+  }
   return { success: true }
 }

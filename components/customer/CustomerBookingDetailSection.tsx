@@ -1,11 +1,22 @@
 'use client'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, Calendar, MapPin, Receipt, Star, User } from 'lucide-react'
+import { ChevronLeft, Calendar, CreditCard, MapPin, Receipt, RotateCcw, Star, User } from 'lucide-react'
+import { cancelBooking } from '@/actions/booking'
 import { BookingTimeline } from './BookingTimeline'
+import { useToast } from '@/components/shared/Toast'
 import { dateLocaleOf, formatINR } from '@/components/pandit/format'
 import { cn } from '@/lib/utils'
 import type { CustomerBookingDetailDTO } from '@/types/dashboard'
+
+const PAYMENT_STATUS_CLASSES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-800 border-amber-200',
+  paid: 'bg-green-50 text-green-800 border-green-200',
+  refunded: 'bg-blue-50 text-blue-800 border-blue-200',
+  failed: 'bg-red-50 text-red-800 border-red-200',
+}
 
 const STATUS_CLASSES: Record<string, string> = {
   requested: 'bg-amber-50 text-amber-800 border-amber-200',
@@ -17,8 +28,30 @@ const STATUS_CLASSES: Record<string, string> = {
 }
 
 export function CustomerBookingDetailSection({ booking }: { booking: CustomerBookingDetailDTO }) {
+  const router = useRouter()
   const { t, i18n } = useTranslation()
+  const { toast } = useToast()
   const locale = dateLocaleOf(i18n.language)
+  const [isPending, startTransition] = useTransition()
+  const [showCancel, setShowCancel] = useState(false)
+  const [reason, setReason] = useState('')
+
+  function cancel() {
+    if (reason.trim().length < 5) return
+    startTransition(async () => {
+      const result = await cancelBooking(booking._id, reason)
+      if ('error' in result) {
+        toast('error', t(`panditDash.errors.${result.error.code}`))
+      } else {
+        toast('success', t('customerDash.detail.cancelledToast'))
+        setShowCancel(false)
+        router.refresh()
+      }
+    })
+  }
+
+  const canCancel = booking.status === 'requested' || booking.status === 'confirmed'
+  const canRebook = booking.status === 'declined' || booking.status === 'expired'
 
   const initials = booking.panditName
     .split(' ')
@@ -100,6 +133,90 @@ export function CustomerBookingDetailSection({ booking }: { booking: CustomerBoo
         />
         <Row icon={Receipt} label={t('customerDash.detail.amount')} value={formatINR(booking.price)} />
       </div>
+
+      {/* Payment info */}
+      {booking.payment && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900">
+              <CreditCard className="h-4 w-4 text-neutral-400" />
+              {t('customerDash.detail.payment')}
+            </p>
+            <span
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                PAYMENT_STATUS_CLASSES[booking.payment.status] ?? PAYMENT_STATUS_CLASSES.pending
+              )}
+            >
+              {t(`customerDash.detail.paymentStatus.${booking.payment.status}`)}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-neutral-600">
+            {booking.payment.method === 'razorpay'
+              ? t('customerDash.detail.paymentRazorpay')
+              : t('customerDash.detail.paymentCash')}
+            <span className="mx-1.5 text-neutral-300">·</span>
+            {formatINR(booking.payment.amount)}
+          </p>
+          {booking.payment.status === 'refunded' && (
+            <p className="mt-1.5 text-xs text-blue-700">{t('customerDash.detail.refundNote')}</p>
+          )}
+        </div>
+      )}
+
+      {/* Cancel — pending or confirmed bookings */}
+      {canCancel && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-4">
+          {!showCancel ? (
+            <button
+              onClick={() => setShowCancel(true)}
+              className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
+            >
+              {t('customerDash.booking.cancel')}
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={t('customerDash.booking.cancelReasonPlaceholder')}
+                maxLength={200}
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={cancel}
+                  disabled={isPending || reason.trim().length < 5}
+                  className="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-40"
+                >
+                  {isPending ? t('customerDash.booking.cancelling') : t('customerDash.booking.confirmCancel')}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCancel(false)
+                    setReason('')
+                  }}
+                  className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50"
+                >
+                  {t('customerDash.booking.back')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Rebook — declined or expired */}
+      {canRebook && (
+        <Link
+          href={`/search?q=${encodeURIComponent(booking.poojaName)}`}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 py-2.5 text-sm font-medium text-white hover:bg-orange-600"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {t('customerDash.detail.rebook')}
+        </Link>
+      )}
 
       {/* Cancellation info */}
       {booking.cancellation && (
